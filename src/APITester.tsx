@@ -1,7 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useRef, type FormEvent } from "react";
 
@@ -14,13 +20,16 @@ export function APITester() {
     try {
       const form = e.currentTarget;
       const formData = new FormData(form);
-      const endpoint = formData.get("endpoint") as string;
-      const url = new URL(endpoint, location.href);
       const method = formData.get("method") as string;
-      const res = await fetch(url, { method });
+      const endpoint = formData.get("endpoint") as string;
 
-      const data = await res.json();
-      responseInputRef.current!.value = JSON.stringify(data, null, 2);
+      const response = await fetch(endpoint, {
+        method,
+        body: method === "POST" ? formData : undefined,
+      });
+
+      const text = await response.text();
+      responseInputRef.current!.value = text;
     } catch (error) {
       responseInputRef.current!.value = String(error);
     }
@@ -38,13 +47,21 @@ export function APITester() {
           </SelectTrigger>
           <SelectContent align="start">
             <SelectItem value="GET">GET</SelectItem>
+            <SelectItem value="POST">POST</SelectItem>
             <SelectItem value="PUT">PUT</SelectItem>
           </SelectContent>
         </Select>
         <Label htmlFor="endpoint" className="sr-only">
           Endpoint
         </Label>
-        <Input id="endpoint" type="text" name="endpoint" defaultValue="/api/hello" placeholder="/api/hello" />
+        <Input
+          id="endpoint"
+          type="text"
+          name="endpoint"
+          defaultValue="/api/upload"
+          placeholder="/api/upload"
+        />
+        <Input id="snapshot" type="file" name="snapshot" accept="image/*" />
         <Button type="submit" variant="secondary">
           Send
         </Button>

@@ -1,6 +1,6 @@
 import GrantForm from "@/components/grantFormt";
 
-export default function GrantPage() {
+export default function GrantPage({ params }: { params: { id: string } }) {
   return (
     <div className="container mx-auto p-8">
       <h1
@@ -9,7 +9,7 @@ export default function GrantPage() {
       >
         Grant Page
       </h1>
-      <GrantForm />
+      <GrantForm clientId={params.id} />
     </div>
   );
 }

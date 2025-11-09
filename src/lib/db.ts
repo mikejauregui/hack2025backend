@@ -1,4 +1,4 @@
-import { sql, SQL } from "bun";
+import { sql } from "bun";
 
 // catabase has a table name transactions
 // with columns id (UUID), amount (int),
@@ -102,7 +102,8 @@ export async function updateGrantTokenByClientId(
 //   "id" uuid PRIMARY KEY,
 //   "uri" text,
 //   "value" text,
-//   "client_id" uuid
+//   "client_id" uuid,
+// timestamp with time zone DEFAULT now()
 // );
 
 export interface Grant {
@@ -110,6 +111,7 @@ export interface Grant {
   uri: string;
   value: string;
   client_id: string;
+  timestamp: Date;
 }
 
 export async function insertGrant(
@@ -126,6 +128,7 @@ export async function insertGrant(
 }
 
 export async function getGrantById(id: string) {
+  // get the mnewost recent grant by client_id
   const [grant] = await sql<Grant[]>`
     SELECT * FROM grants_manager WHERE client_id = ${id};
   `;

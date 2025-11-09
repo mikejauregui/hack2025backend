@@ -2,7 +2,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
-export default function GrantForm() {
+export default function GrantForm({ clientId }: { clientId: string }) {
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -30,13 +30,9 @@ export default function GrantForm() {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <Label>Client ID:</Label>
-      <Input
-        type="text"
-        name="client_id"
-        defaultValue={"b3b1d743-564d-46b1-89f4-2543399f4055"}
-      />
+      <Input type="text" name="client_id" defaultValue={clientId} />
       <Label>Amount:</Label>
-      <Input type="number" name="amount" />
+      <Input type="number" name="amount" defaultValue={100} />
       <Button type="submit">Create Grant</Button>
     </form>
   );

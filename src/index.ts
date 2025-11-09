@@ -4,7 +4,7 @@ import index from "./app/index.html";
 import { upload } from "./api/upload";
 import { listTransactions } from "./api/transactions";
 import { me } from "./api/me";
-import { grant } from "./api/grant";
+import { grantEndpoint, confirm } from "./api/grant";
 import { listClients } from "./api/getClients";
 
 const server = serve({
@@ -25,7 +25,11 @@ const server = serve({
     },
 
     "/api/grant": {
-      POST: grant,
+      POST: grantEndpoint,
+    },
+
+    "/api/clients/:id/confirm": {
+      GET: confirm,
     },
 
     "/api/clients": {

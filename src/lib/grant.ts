@@ -144,7 +144,7 @@ export async function startOutgoingPaymentGrant(
         start: ["redirect"],
         finish: {
           method: "redirect",
-          uri: process.env.REDIRECT_URI! + "?t=" + txID, // The redirect URI you set when creating the client on the Open Payments server
+          uri: `${process.env.BASS_URL}/clients/${client_id}/confirm`,
           nonce: txID,
         },
       },
@@ -166,12 +166,11 @@ export async function startOutgoingPaymentGrant(
 //   .createInterface({ input: process.stdin, output: process.stdout })
 //   .question("\nPlease accept grant and press enter...");
 
-export async function waitForGrantFinalization(
-  client_id: string,
-  txID: string
-) {
+export async function waitForGrantFinalization(client_id: string) {
   const client = await createClient(client_id);
-  const outgoingPaymentGrant = await getGrantById(txID);
+  const outgoingPaymentGrant = await getGrantById(client_id);
+
+  console.log("Fetched grant from DB:", outgoingPaymentGrant);
 
   if (!outgoingPaymentGrant) {
     throw new Error("No outgoing payment grant found");
@@ -189,18 +188,14 @@ export async function waitForGrantFinalization(
     });
   } catch (err) {
     if (err instanceof OpenPaymentsClientError) {
-      console.log(grantContinuationErrorMessage);
-      process.exit();
+      throw new Error(grantContinuationErrorMessage + `\n${err.message}`);
     }
 
     throw err;
   }
 
   if (!isFinalizedGrant(finalizedOutgoingPaymentGrant)) {
-    console.log(
-      "There was an error continuing the grant. You probably have not accepted the grant at the url."
-    );
-    process.exit();
+    throw new Error("Grant not finalized");
   }
 
   return finalizedOutgoingPaymentGrant.access_token.value;

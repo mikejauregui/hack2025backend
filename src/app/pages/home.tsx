@@ -1,3 +1,5 @@
+import { ListOfClients } from "@/components/ListOfClients";
+
 export default function HomePage() {
   return (
     <div className="container mx-auto p-8">
@@ -7,6 +9,7 @@ export default function HomePage() {
       >
         Home
       </h1>
+      <ListOfClients />
     </div>
   );
 }

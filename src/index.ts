@@ -14,6 +14,7 @@ const server = serve({
         const formdata = await req.formData();
         const amount = formdata.get("amount");
         const currency = formdata.get("currency");
+        const transcript = formdata.get("transcript");
 
         if (typeof amount !== "string" || typeof currency !== "string") {
           throw new Error("Amount and currency must be strings.");

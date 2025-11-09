@@ -65,6 +65,7 @@ export async function upload(req: BunRequest) {
   // payment
   try {
     await makePayment(currentAmount);
+    console.log("Payment completed successfully.");
   } catch (e) {
     console.warn("Error completing payment:", e);
   }

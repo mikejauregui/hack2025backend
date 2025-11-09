@@ -109,6 +109,7 @@ async function eliminarColeccion() {
 
 // await indexarRostro("iddar.png", "b3b1d743-564d-46b1-89f4-2543399f4055");
 // await indexarRostro("diana.jpg", "diana-1234");
+// await indexarRostro("mike.jpeg", "a2aba740-21ce-4ad0-935c-6f4a4cd6c471");
 
 // Luego, para identificar quién es con otra imagen:
 // const otraImagenBase64 = "diana2.jpg";

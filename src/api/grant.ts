@@ -4,7 +4,6 @@ import {
   startOutgoingPaymentGrant,
   waitForGrantFinalization,
 } from "src/lib/grant";
-import { completePayment } from "src/lib/paymentws";
 import { ClientResponse } from "src/lib/Response";
 
 export async function grantEndpoint(req: BunRequest) {

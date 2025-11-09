@@ -11,11 +11,10 @@ export async function upload(req: BunRequest) {
   const currency = formdata.get("currency");
   const transcript = formdata.get("transcript");
 
-  const currentAmount = parseFloat(`$${amount}`) * 100;
-
   if (typeof amount !== "string" || typeof currency !== "string") {
     throw new Error("Amount and currency must be strings.");
   }
+  const currentAmount = parseFloat(amount) * 100;
 
   console.log("Received formdata:", formdata);
   // const name = formdata.get("name");
@@ -62,23 +61,23 @@ export async function upload(req: BunRequest) {
     );
   }
 
-  // payment
-  const grant = await getGrantById(client.id);
-  if (!grant) {
-    return ClientResponse.json(
-      {
-        message: "No grant found for client",
-        // transaction,
-        userIdDetectado,
-      },
-      { status: 404 }
-    );
-  }
+  // // payment
+  // const grant = await getGrantById(client.id);
+  // if (!grant) {
+  //   return ClientResponse.json(
+  //     {
+  //       message: "No grant found for client",
+  //       // transaction,
+  //       userIdDetectado,
+  //     },
+  //     { status: 404 }
+  //   );
+  // }
 
-  // const finalTxid = await waitForGrantFinalization(client.id, grant.id);
-  const payment = await completePayment(client.id, currentAmount, grant.value);
+  // // const finalTxid = await waitForGrantFinalization(client.id, grant.id);
+  // const payment = await completePayment(client.id, currentAmount, grant.value);
 
-  console.log("Payment completed:", payment);
+  // console.log("Payment completed:", payment);
 
   // save transaction
   const transaction = await insertTransaction({
@@ -93,6 +92,6 @@ export async function upload(req: BunRequest) {
     message: "File uploaded successfully",
     transaction,
     userIdDetectado,
-    payment,
+    // payment,
   });
 }

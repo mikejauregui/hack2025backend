@@ -1,7 +1,9 @@
 import { serve } from "bun";
 import index from "./index.html";
 import { s3, type S3File } from "bun";
-import { getTransactions, insertTransaction } from "./lib/db";
+import { getClientById, getTransactions, insertTransaction } from "./lib/db";
+import { startOutgoingPaymentGrant } from "./lib/grant";
+import { ClientResponse } from "./lib/Response";
 
 const server = serve({
   routes: {
@@ -39,13 +41,14 @@ const server = serve({
         }
 
         const transaction = await insertTransaction({
-          amount: parseInt(amount) * 100, // store in cents
+          amount: parseFloat(amount) * 100, // store in cents
           currency,
           store: 1,
           snapshot_id: randomId,
+          transcript: typeof transcript === "string" ? transcript : null,
         });
 
-        return Response.json({
+        return ClientResponse.json({
           message: "File uploaded successfully",
           transaction,
         });
@@ -55,30 +58,33 @@ const server = serve({
     "/api/transactions": {
       async GET(req) {
         const transactions = await getTransactions();
-        return Response.json(transactions);
+        return ClientResponse.json(
+          transactions.map((t) => ({
+            ...t,
+            amount: t.amount / 100, // convert back to dollars
+          }))
+        );
       },
     },
 
-    "/api/hello": {
+    "/api/me": {
       async GET(req) {
-        return Response.json({
-          message: "Hello, world!",
-          method: "GET",
-        });
-      },
-      async PUT(req) {
-        return Response.json({
-          message: "Hello, world!",
-          method: "PUT",
+        const client = await getClientById(
+          "b3b1d743-564d-46b1-89f4-2543399f4055"
+        );
+        return ClientResponse.json({
+          ...client,
+          uri: "",
         });
       },
     },
 
-    "/api/hello/:name": async (req) => {
-      const name = req.params.name;
-      return Response.json({
-        message: `Hello, ${name}!`,
-      });
+    "/api/grant": {
+      async POST(req) {
+        const { client_id, amount } = await req.json();
+        const grant = await startOutgoingPaymentGrant(client_id, amount);
+        return ClientResponse.json(grant);
+      },
     },
   },
 

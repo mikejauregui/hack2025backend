@@ -10,6 +10,7 @@ import "./index.css";
 
 import logo from "./logo.svg";
 import reactLogo from "./react.svg";
+import GrantForm from "./components/grantFormt";
 
 export function App() {
   return (
@@ -27,6 +28,7 @@ export function App() {
         />
       </div>
       <Card>
+        <GrantForm />
         <CardHeader className="gap-4">
           <CardTitle className="text-3xl font-bold">Bun + React</CardTitle>
           <CardDescription>

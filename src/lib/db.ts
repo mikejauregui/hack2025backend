@@ -12,7 +12,7 @@ export interface Transaction {
   currency: string;
   store: number;
   snapshot_id: string;
-  transcript?: string;
+  transcript?: string | null;
 }
 
 export async function insertTransaction(request: Transaction) {
@@ -41,19 +41,86 @@ export async function getTransactionById(id: string) {
 // "clients" (
 //   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid (),
 //   "name" text,
-//   "grant_token" text
+//   "grant_token" text,
+// "wallet" text
 // );
 
-export function insertClient(name: string, grant_token: string) {
+export interface Client {
+  id: string;
+  name: string;
+  grant_token: string;
+  wallet: string;
+}
+
+export function insertClient(
+  name: string,
+  grant_token: string,
+  wallet: string
+) {
   return sql`
-    INSERT INTO clients (name, grant_token)
-    VALUES (${name}, ${grant_token})
+    INSERT INTO clients (name, grant_token, wallet)
+    VALUES (${name}, ${grant_token}, ${wallet})
     RETURNING *;
   `;
 }
 
-export function getGrantTokenByClientName(name: string) {
-  return sql<Transaction[]>`
-    SELECT grant_token FROM clients WHERE name = ${name};
+export async function getClientById(id: string) {
+  const [client] = await sql<Client[]>`
+    SELECT * FROM clients WHERE id = ${id};
   `;
+  return client;
+}
+
+export async function getGrantTokenByClientId(id: string) {
+  const [client] = await sql<Client[]>`
+    SELECT * FROM clients WHERE id = ${id};
+  `;
+  return client?.grant_token;
+}
+
+export async function updateGrantTokenByClientId(
+  id: string,
+  grant_token: string
+) {
+  const [client] = await sql<Client[]>`
+    UPDATE clients
+    SET grant_token = ${grant_token}
+    WHERE id = ${id}
+    RETURNING *;
+  `;
+  return client;
+}
+
+// "grants_manager" (
+//   "id" uuid PRIMARY KEY,
+//   "uri" text,
+//   "value" text,
+//   "client_id" uuid
+// );
+
+export interface Grant {
+  id: string;
+  uri: string;
+  value: string;
+  client_id: string;
+}
+
+export async function insertGrant(
+  id: string,
+  uri: string,
+  value: string,
+  client_id: string
+) {
+  return sql<Grant[]>`
+    INSERT INTO grants_manager (id, uri, value, client_id)
+    VALUES (${id}, ${uri}, ${value}, ${client_id})
+    RETURNING *;
+  `;
+}
+
+export async function getGrantById(id: string) {
+  const [grant] = await sql<Grant[]>`
+    SELECT * FROM grants_manager WHERE id = ${id};
+  `;
+  return grant;
 }

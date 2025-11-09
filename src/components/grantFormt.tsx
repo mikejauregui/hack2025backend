@@ -18,6 +18,12 @@ export default function GrantForm() {
     });
 
     const data = await response.json();
+    const uri = data?.outgoingPaymentGrant?.interact?.redirect;
+
+    if (uri) {
+      window.location.href = uri;
+    }
+
     console.log("Grant response:", data);
   };
 
@@ -25,7 +31,11 @@ export default function GrantForm() {
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <label>
         Client ID:
-        <Input type="text" name="client_id" defaultValue={1} />
+        <Input
+          type="text"
+          name="client_id"
+          defaultValue={"b3b1d743-564d-46b1-89f4-2543399f4055"}
+        />
       </label>
       <label>
         Amount:

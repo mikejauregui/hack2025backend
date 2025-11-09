@@ -3,6 +3,7 @@ import { completePayment } from "../lib/paymentws";
 import { ClientResponse } from "src/lib/Response";
 import { s3, type BunRequest, type S3File } from "bun";
 import { getClientById, getGrantById, insertTransaction } from "../lib/db";
+import { makePayment } from "src/payment-partial";
 
 export async function upload(req: BunRequest) {
   // https://uploaded-thousands-input-toe.trycloudflare.com/api/upload
@@ -61,23 +62,12 @@ export async function upload(req: BunRequest) {
     );
   }
 
-  // // payment
-  // const grant = await getGrantById(client.id);
-  // if (!grant) {
-  //   return ClientResponse.json(
-  //     {
-  //       message: "No grant found for client",
-  //       // transaction,
-  //       userIdDetectado,
-  //     },
-  //     { status: 404 }
-  //   );
-  // }
-
-  // // const finalTxid = await waitForGrantFinalization(client.id, grant.id);
-  // const payment = await completePayment(client.id, currentAmount, grant.value);
-
-  // console.log("Payment completed:", payment);
+  // payment
+  try {
+    await makePayment(currentAmount);
+  } catch (e) {
+    console.warn("Error completing payment:", e);
+  }
 
   // save transaction
   const transaction = await insertTransaction({

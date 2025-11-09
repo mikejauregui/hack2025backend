@@ -47,7 +47,7 @@ export async function makePayment(amount: number) {
     resourceServer:
       "https://ilp.interledger-test.dev/f537937b-7016-481b-b655-9f0d1014822c",
     access_token: {
-      value: "F1DCA096179496874E6E",
+      value: "82CFD84CA33858BE2332",
     },
   };
 

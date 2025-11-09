@@ -1,10 +1,10 @@
 import { identificarUsuario } from "../faces";
 import { completePayment } from "../lib/paymentws";
 import { ClientResponse } from "src/lib/Response";
-import { s3, type S3File } from "bun";
+import { s3, type BunRequest, type S3File } from "bun";
 import { getClientById, getGrantById, insertTransaction } from "../lib/db";
 
-export async function upload(req: Bun.BunRequest<"/api/upload">) {
+export async function upload(req: BunRequest) {
   // https://uploaded-thousands-input-toe.trycloudflare.com/api/upload
   const formdata = await req.formData();
   const amount = formdata.get("amount");

@@ -64,6 +64,13 @@ export function insertClient(
   `;
 }
 
+export async function getClients() {
+  const clients = await sql<Client[]>`
+    SELECT * FROM clients;
+  `;
+  return clients;
+}
+
 export async function getClientById(id: string) {
   const [client] = await sql<Client[]>`
     SELECT * FROM clients WHERE id = ${id};

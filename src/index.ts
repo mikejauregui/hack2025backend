@@ -1,10 +1,11 @@
 import { serve } from "bun";
 import index from "./app/index.html";
-import { getClientById, getTransactions } from "./lib/db";
-import { startOutgoingPaymentGrant } from "./lib/grant";
-import { ClientResponse } from "./lib/Response";
 
 import { upload } from "./api/upload";
+import { listTransactions } from "./api/transactions";
+import { me } from "./api/me";
+import { grant } from "./api/grant";
+import { listClients } from "./api/getClients";
 
 const server = serve({
   routes: {
@@ -16,35 +17,19 @@ const server = serve({
     },
 
     "/api/transactions": {
-      async GET(req) {
-        const transactions = await getTransactions();
-        return ClientResponse.json(
-          transactions.map((t) => ({
-            ...t,
-            amount: t.amount / 100, // convert back to dollars
-          }))
-        );
-      },
+      GET: listTransactions,
     },
 
     "/api/me": {
-      async GET(req) {
-        const client = await getClientById(
-          "b3b1d743-564d-46b1-89f4-2543399f4055"
-        );
-        return ClientResponse.json({
-          ...client,
-          uri: "",
-        });
-      },
+      GET: me,
     },
 
     "/api/grant": {
-      async POST(req) {
-        const { client_id, amount } = await req.json();
-        const grant = await startOutgoingPaymentGrant(client_id, amount);
-        return ClientResponse.json(grant);
-      },
+      POST: grant,
+    },
+
+    "/api/clients": {
+      GET: listClients,
     },
   },
 

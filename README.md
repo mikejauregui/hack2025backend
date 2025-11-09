@@ -2,6 +2,10 @@
 
 A biometric payment platform that uses facial recognition to identify users and process transactions via Interledger.
 
+# About This project
+
+[One Page Doc](https://docs.google.com/document/d/1S2hedoYSg_eU0Mr8ETCOuv1DbL44KDl4SGwY3fXBGQk/edit?usp=sharing)
+
 # Frontend Repo
 
 The frontend code is located in a separate repository: [face-pay-frontend](https://github.com/mikejauregui/hack2025front)

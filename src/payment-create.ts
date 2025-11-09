@@ -120,6 +120,12 @@ console.log(
   finalizedOutgoingPaymentGrant
 );
 
+console.log({
+  url: sendingWalletAddress.resourceServer,
+  accessToken: finalizedOutgoingPaymentGrant.access_token.value,
+});
+
+process.exit();
 // Step 7: Finally, create the outgoing payment on the sending wallet address.
 // This will make a payment from the outgoing payment to the incoming one (over ILP)
 const outgoingPayment = await createOutgoingPayment(
@@ -133,5 +139,3 @@ console.log(
   "\nStep 7: Created outgoing payment. Funds will now move from the outgoing payment to the incoming payment.",
   outgoingPayment
 );
-
-process.exit();

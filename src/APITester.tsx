@@ -61,7 +61,17 @@ export function APITester() {
           defaultValue="/api/upload"
           placeholder="/api/upload"
         />
-        <Input id="snapshot" type="file" name="snapshot" accept="image/*" />
+        <div>
+          <Input id="amount" type="number" name="amount" placeholder="Amount" />
+          <Input
+            id="currency"
+            type="text"
+            name="currency"
+            defaultValue="EUR"
+            placeholder="Currency"
+          />
+          <Input id="snapshot" type="file" name="snapshot" accept="image/*" />
+        </div>
         <Button type="submit" variant="secondary">
           Send
         </Button>

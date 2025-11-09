@@ -53,7 +53,7 @@ async function indexarRostro(image: string, userId: string) {
 }
 
 // Buscar rostro y obtener ID de usuario asociado
-async function identificarUsuario(image: string) {
+export async function identificarUsuario(image: string) {
   const params = {
     CollectionId: collectionId,
     Image: {
@@ -107,11 +107,11 @@ async function eliminarColeccion() {
 // // Ejemplo de ejecución
 // await crearColeccion();
 
-// await indexarRostro("iddar.png", "iddar-4242");
+// await indexarRostro("iddar.png", "b3b1d743-564d-46b1-89f4-2543399f4055");
 // await indexarRostro("diana.jpg", "diana-1234");
 
 // Luego, para identificar quién es con otra imagen:
-const otraImagenBase64 = "diana2.jpg";
+// const otraImagenBase64 = "diana2.jpg";
 
-const userIdDetectado = await identificarUsuario(otraImagenBase64);
-console.log("ID de usuario identificado:", userIdDetectado);
+// const userIdDetectado = await identificarUsuario(otraImagenBase64);
+// console.log("ID de usuario identificado:", userIdDetectado);

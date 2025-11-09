@@ -3,7 +3,6 @@ import {
   OpenPaymentsClientError,
   isFinalizedGrant,
 } from "@interledger/open-payments";
-import readline from "readline/promises";
 import fs from "fs";
 import { getClientById, getGrantById, insertGrant } from "./db";
 
@@ -204,17 +203,5 @@ export async function waitForGrantFinalization(
     process.exit();
   }
 
-  console.log(
-    "\nStep 6: got finalized outgoing payment grant",
-    finalizedOutgoingPaymentGrant
-  );
-
-  // write the `quoteGrant.access_token.value` somewhere safe if you want to reuse it later!
-  fs.writeFileSync(
-    "quoteGrant.token.txt",
-    finalizedOutgoingPaymentGrant.access_token.value
-  );
-  console.log(
-    "\nWrote quote grant access token to quoteGrant.token.txt, so you can reuse it later."
-  );
+  return finalizedOutgoingPaymentGrant.access_token.value;
 }

@@ -4,13 +4,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./app/components/ui/card";
-import { APITester } from "./app/APITester";
+} from "@/components/ui/card";
+import { APITester } from "./APITester";
 import "./index.css";
 
 import logo from "./logo.svg";
 import reactLogo from "./react.svg";
-import GrantForm from "./app/components/grantFormt";
+import GrantForm from "@/components/grantFormt";
 
 export function App() {
   return (

@@ -120,7 +120,7 @@ export async function insertGrant(
 
 export async function getGrantById(id: string) {
   const [grant] = await sql<Grant[]>`
-    SELECT * FROM grants_manager WHERE id = ${id};
+    SELECT * FROM grants_manager WHERE client_id = ${id};
   `;
   return grant;
 }

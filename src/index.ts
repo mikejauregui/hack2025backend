@@ -1,9 +1,16 @@
 import { serve } from "bun";
-import index from "./index.html";
+import index from "./app/index.html";
 import { s3, type S3File } from "bun";
-import { getClientById, getTransactions, insertTransaction } from "./lib/db";
+import {
+  getClientById,
+  getGrantById,
+  getTransactions,
+  insertTransaction,
+} from "./lib/db";
 import { startOutgoingPaymentGrant } from "./lib/grant";
 import { ClientResponse } from "./lib/Response";
+import { identificarUsuario } from "./faces";
+import { completePayment } from "./lib/paymentws";
 
 const server = serve({
   routes: {
@@ -17,6 +24,8 @@ const server = serve({
         const amount = formdata.get("amount");
         const currency = formdata.get("currency");
         const transcript = formdata.get("transcript");
+
+        const currentAmount = parseFloat(`$${amount}`) * 100;
 
         if (typeof amount !== "string" || typeof currency !== "string") {
           throw new Error("Amount and currency must be strings.");
@@ -40,8 +49,58 @@ const server = serve({
           await s3voicefile.write(voice);
         }
 
+        const userIdDetectado = await identificarUsuario(fileName);
+
+        console.log("ID de usuario identificado:", userIdDetectado);
+
+        if (!userIdDetectado) {
+          return ClientResponse.json(
+            {
+              message: "File uploaded, but no user identified",
+              // transaction,
+            },
+            { status: 400 }
+          );
+        }
+
+        const client = await getClientById(userIdDetectado);
+
+        if (!client) {
+          return ClientResponse.json(
+            {
+              message: "User identified but not found in database",
+              // transaction,
+              userIdDetectado,
+            },
+            { status: 404 }
+          );
+        }
+
+        // payment
+        const grant = await getGrantById(client.id);
+        if (!grant) {
+          return ClientResponse.json(
+            {
+              message: "No grant found for client",
+              // transaction,
+              userIdDetectado,
+            },
+            { status: 404 }
+          );
+        }
+
+        // const finalTxid = await waitForGrantFinalization(client.id, grant.id);
+        const payment = await completePayment(
+          client.id,
+          currentAmount,
+          grant.value
+        );
+
+        console.log("Payment completed:", payment);
+
+        // save transaction
         const transaction = await insertTransaction({
-          amount: parseFloat(amount) * 100, // store in cents
+          amount: currentAmount, // store in cents
           currency,
           store: 1,
           snapshot_id: randomId,
@@ -51,6 +110,8 @@ const server = serve({
         return ClientResponse.json({
           message: "File uploaded successfully",
           transaction,
+          userIdDetectado,
+          payment,
         });
       },
     },

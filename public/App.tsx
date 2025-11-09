@@ -4,13 +4,12 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./app/components/ui/card";
-import { APITester } from "./app/APITester";
+} from "@/components/ui/card";
+import { APITester } from "../src/app/APITester";
 import "./index.css";
 
 import logo from "./logo.svg";
 import reactLogo from "./react.svg";
-import GrantForm from "./app/components/grantFormt";
 
 export function App() {
   return (
@@ -28,9 +27,10 @@ export function App() {
         />
       </div>
       <Card>
-        <GrantForm />
         <CardHeader className="gap-4">
-          <CardTitle className="text-3xl font-bold">Bun + React</CardTitle>
+          <CardTitle className="text-3xl font-bold">
+            Bun + React + Elysia
+          </CardTitle>
           <CardDescription>
             Edit{" "}
             <code className="rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono">

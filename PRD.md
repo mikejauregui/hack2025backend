@@ -2,9 +2,20 @@
 
 ## Document Information
 - **Project**: Face-Based Payment System - User Registration & Onboarding
-- **Version**: 1.0
+- **Version**: 1.1
 - **Date**: 2025-11-21
-- **Status**: Proposed
+- **Last Updated**: 2025-11-21
+- **Status**: Approved - Ready for Implementation
+
+### Changelog
+- **v1.1** (2025-11-21): Resolved all open questions with stakeholder decisions
+  - Added ZeptoMail + Liquid templates for email verification
+  - Set wallet limit to 5 (configurable via env)
+  - Set session duration to 5 minutes
+  - Added grant renewal logic reference
+  - Clarified prototype scope (no legal compliance needed yet)
+  - Added age validation requirement (18+)
+- **v1.0** (2025-11-21): Initial PRD draft
 
 ---
 
@@ -2070,35 +2081,343 @@ voice: <audio file> (optional)
 
 ---
 
-## Open Questions
+## Resolved Questions & Decisions
 
-### Product Questions
-1. **Email Verification**: Should email verification be required before users can make payments, or optional?
-2. **Wallet Limits**: What should be the maximum number of wallets per user? (Proposed: 10)
-3. **Transaction Limits**: Should we enforce daily/monthly spending limits? What should they be?
-4. **Face Image Retention**: How long should we keep face images after account deletion? (Proposed: 30 days)
-5. **Minimum Age**: Do we need age verification for users? What's the minimum age? (Proposed: 18)
+### Product Decisions
 
-### Technical Questions
-1. **Session Duration**: 30 days or shorter? Should we implement refresh tokens?
-2. **Face Recognition Threshold**: 85% confidence acceptable, or should it be higher?
-3. **Image Storage**: Should we generate thumbnails for face images, or store originals only?
-4. **Database Scaling**: When should we consider read replicas or sharding?
-5. **Backup Strategy**: Daily automated backups sufficient, or need real-time replication?
+#### 1. Email Verification ✅ REQUIRED
+**Decision**: Email verification is **required** using ZeptoMail with Liquid templates.
 
-### Business Questions
-1. **Pricing Model**: How will the platform be monetized? (Transaction fees, subscription, etc.)
-2. **Merchant Onboarding**: How will stores sign up to accept payments?
-3. **Chargebacks**: How will disputes and chargebacks be handled?
-4. **KYC/AML**: Do we need Know Your Customer checks? At what transaction volume?
-5. **Insurance**: Do we need to insure against fraudulent transactions?
+**Implementation**:
+```typescript
+// src/lib/email.ts
+import { SendMailClient } from "zeptomail";
+import { Liquid } from "liquidjs";
+
+const url = import.meta.env.ZEPTOMAIL_URL || "";
+const token = import.meta.env.ZEPTOMAIL_TOKEN || "";
+const client = new SendMailClient({ url, token });
+
+export const engine = new Liquid({
+  root: "src/templates/",
+  extname: ".liquid",
+});
+
+export async function sendVerificationEmail(recipient: string, name: string, verificationLink: string) {
+  const content = await engine.renderFile("email-verification", {
+    name,
+    verificationLink,
+  });
+
+  const response = await client.sendMail({
+    from: {
+      address: "noreply@dbug.mx",
+      name: "noreply",
+    },
+    to: [{
+      email_address: {
+        address: recipient,
+        name: name,
+      },
+    }],
+    subject: "Verify Your Email Address",
+    htmlbody: content,
+  });
+
+  return response;
+}
+```
+
+**Required Templates**:
+- `src/templates/email-verification.liquid` - Email verification
+- `src/templates/password-reset.liquid` - Password reset
+- `src/templates/welcome.liquid` - Welcome email after verification
+
+**Environment Variables**:
+```env
+ZEPTOMAIL_URL=https://api.zeptomail.com/
+ZEPTOMAIL_TOKEN=your_zeptomail_token
+```
+
+---
+
+#### 2. Wallet Limits ✅ CONFIGURABLE
+**Decision**: Maximum wallets per user is **configurable via environment variable**.
+
+**Implementation**:
+```env
+# Max wallets per user (default: 5)
+MAX_WALLETS_PER_USER=5
+```
+
+**Validation**:
+```typescript
+// src/api/wallets/create.ts
+const maxWallets = parseInt(process.env.MAX_WALLETS_PER_USER || "5");
+const userWallets = await getUserWallets(userId);
+
+if (userWallets.length >= maxWallets) {
+  return ClientResponse.json(
+    { error: `Maximum ${maxWallets} wallets allowed per user` },
+    { status: 409 }
+  );
+}
+```
+
+---
+
+#### 3. Transaction Limits ❌ NOT IMPLEMENTED
+**Decision**: No transaction limits for now (deferred to future phase).
+
+**Rationale**: Prototype phase, limits can be added later based on usage patterns and fraud analysis.
+
+---
+
+#### 4. Face Image Retention ✅ HANDLED EXTERNALLY
+**Decision**: Face image retention is **handled by external workflow**.
+
+**Implementation**: No action required in this application. External service manages:
+- Face image lifecycle
+- GDPR compliance (right to be forgotten)
+- Automatic deletion after account closure
+
+---
+
+#### 5. Minimum Age ✅ 18+ REQUIRED
+**Decision**: All users must be **at least 18 years old**.
+
+**Implementation**:
+```typescript
+// src/lib/validation.ts
+export function validateAge(dateOfBirth: Date): boolean {
+  const today = new Date();
+  const birthDate = new Date(dateOfBirth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  return age >= 18;
+}
+
+// In signup endpoint
+if (!validateAge(dateOfBirth)) {
+  return ClientResponse.json(
+    { error: "You must be at least 18 years old to register" },
+    { status: 400 }
+  );
+}
+```
+
+**Database**: `date_of_birth` field required in users table.
+
+---
+
+### Technical Decisions
+
+#### 6. Session Duration ✅ 5 MINUTES
+**Decision**: User sessions expire after **5 minutes** for security.
+
+**Implementation**:
+```typescript
+// src/lib/auth.ts
+export async function createSession(userId: string): Promise<Session> {
+  const token = generateSessionToken();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+  const [session] = await sql<Session[]>`
+    INSERT INTO user_sessions (user_id, session_token, expires_at)
+    VALUES (${userId}, ${token}, ${expiresAt})
+    RETURNING id, user_id, session_token, expires_at;
+  `;
+
+  return session;
+}
+```
+
+**Grant Management**: For Interledger payment grants, use the Open Payments SDK to **renew grants before expiration**:
+```typescript
+// src/lib/grant.ts
+import { continueGrant } from '@interledger/open-payments';
+
+// Renew grant before it expires
+export async function renewGrantIfNeeded(grant: Grant) {
+  const expiresIn = new Date(grant.expires_at).getTime() - Date.now();
+  const renewThreshold = 60 * 1000; // Renew if expires in < 1 minute
+
+  if (expiresIn < renewThreshold) {
+    const client = await createClient(grant.user_id);
+    const renewed = await client.grant.continue({
+      url: grant.uri,
+      accessToken: grant.value,
+    });
+
+    // Update grant in database
+    await updateGrant(grant.id, {
+      value: renewed.access_token.value,
+      expires_at: renewed.access_token.expires_at,
+    });
+  }
+}
+```
+
+**Reference**: https://openpayments.dev/sdk/grant-continue/
+
+---
+
+#### 7. Face Recognition Threshold ✅ 85% MAINTAINED
+**Decision**: Maintain **85% confidence threshold** (current implementation).
+
+**Rationale**: Industry standard, balances security with usability.
+
+---
+
+#### 8. Image Storage ✅ S3 WITH BUN MODULE
+**Decision**: Continue using **S3 with Bun's native module** (current implementation).
+
+**Implementation** (already in place):
+```typescript
+// src/api/upload.ts
+import { s3, type S3File } from "bun";
+
+const fileName = `snapshot-${randomId}.png`;
+const s3file: S3File = s3.file(fileName);
+await s3file.write(snapshot);
+```
+
+**No thumbnails needed** - store originals only for face recognition accuracy.
+
+---
+
+#### 9. Database Scaling ✅ NEON AUTO-SCALING
+**Decision**: **No manual scaling required** - Neon handles this automatically.
+
+**Rationale**: Neon is serverless and auto-scales based on demand. No action required.
+
+---
+
+#### 10. Backup Strategy ✅ AUTOMATED
+**Decision**: **Rely on Neon and S3 automated backups**.
+
+**Details**:
+- **Neon Database**: Automatic point-in-time recovery (PITR) backups
+- **S3 Storage**: Versioning enabled for snapshot recovery
+- **No manual backup needed**: Both services handle this automatically
+
+---
+
+### Business Decisions
+
+#### 11. Pricing Model ⏸️ PROTOTYPE PHASE
+**Decision**: Deferred - this is a **prototype**, no monetization yet.
+
+---
+
+#### 12. Merchant Onboarding ✅ SEPARATE REPO
+**Decision**: Merchant onboarding is **already implemented in separate frontend**.
+
+**Repository**: https://github.com/mikejauregui/hack2025front
+
+**No integration needed** - merchant flow is independent from user registration flow.
+
+---
+
+#### 13. Chargebacks ⏸️ FUTURE PHASE
+**Decision**: Deferred to post-launch phase.
+
+---
+
+#### 14. KYC/AML ⏸️ PROTOTYPE PHASE
+**Decision**: Not required for prototype.
+
+---
+
+#### 15. Insurance ⏸️ PROTOTYPE PHASE
+**Decision**: Not required for prototype.
+
+---
 
 ### Legal & Compliance
-1. **Terms of Service**: Who will draft the terms of service and privacy policy?
-2. **GDPR Compliance**: Do we need a Data Protection Officer (DPO)?
-3. **Biometric Laws**: Are there specific regulations in target markets (e.g., Illinois BIPA)?
-4. **Payment Regulations**: Do we need any licenses to operate as a payment service?
-5. **Data Residency**: Do we need to store data in specific regions for compliance?
+
+#### 16. All Legal Questions ⏸️ PROTOTYPE PHASE
+**Decision**: This is a **prototype** - no formal legal or compliance measures implemented.
+
+**Rationale**:
+- No terms of service needed for prototype
+- No GDPR DPO required
+- No biometric law compliance needed yet
+- No payment licenses needed for testing
+- No data residency restrictions
+
+**Future Consideration**: Legal framework will be established before production launch.
+
+---
+
+## Implementation Updates Based on Decisions
+
+### Updated Environment Variables
+```env
+# Email Service (ZeptoMail)
+ZEPTOMAIL_URL=https://api.zeptomail.com/
+ZEPTOMAIL_TOKEN=your_token_here
+
+# Wallet Configuration
+MAX_WALLETS_PER_USER=5
+
+# Session Configuration
+SESSION_DURATION_MINUTES=5
+
+# Existing variables...
+DATABASE_URL=...
+S3_ACCESS_KEY_ID=...
+KEY_ID=...
+```
+
+### Updated Dependencies
+```json
+{
+  "dependencies": {
+    "zeptomail": "^1.0.0",
+    "liquidjs": "^10.0.0",
+    // ... existing dependencies
+  }
+}
+```
+
+### New Required Directories
+```
+src/
+├── templates/           # Liquid email templates
+│   ├── email-verification.liquid
+│   ├── password-reset.liquid
+│   └── welcome.liquid
+└── lib/
+    └── email.ts        # Email utility functions
+```
+
+### Updated User Registration Flow
+1. User submits registration form with **date of birth**
+2. Validate age ≥ 18
+3. Create user account (email_verified = false)
+4. Generate verification token
+5. **Send verification email via ZeptoMail**
+6. User clicks link in email
+7. Verify token and update email_verified = true
+8. Send welcome email
+9. Proceed to face upload and wallet creation
+
+### Updated Database Schema
+```sql
+-- Add email verification fields to users table
+ALTER TABLE users ADD COLUMN email_verification_token TEXT;
+ALTER TABLE users ADD COLUMN email_verification_expires_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMP WITH TIME ZONE;
+
+-- Add date_of_birth (required for age validation)
+ALTER TABLE users ADD COLUMN date_of_birth DATE NOT NULL;
+```
 
 ---
 

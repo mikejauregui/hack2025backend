@@ -73,3 +73,17 @@ bun start
 - `POST /api/grant` - Initiate payment grant flow
 - `GET /api/clients/:id/confirm` - Confirm payment grant
 - `GET /api/me` - Get current user info
+
+## Troubleshooting
+
+### Port 3000 in use
+
+If you encounter an error that port 3000 is already in use, you can identify and kill the process using the following commands:
+
+```bash
+# Find the PID of the process using port 3000
+lsof -i :3000
+
+# Kill the process (replace <PID> with the actual process ID)
+kill -9 <PID>
+```

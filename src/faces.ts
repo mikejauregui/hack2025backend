@@ -26,7 +26,7 @@ async function crearColeccion() {
 // Indexar rostro con ID de usuario
 // base64Image: cadena base64 de la imagen
 // userId: string con el ID del usuario asociado
-async function indexarRostro(image: string, userId: string) {
+export async function indexarRostro(image: string, userId: string) {
   const params = {
     CollectionId: collectionId,
     Image: {

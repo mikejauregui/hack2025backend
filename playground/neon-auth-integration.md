@@ -80,10 +80,12 @@ Response: { user }
 | Framework | Vite | Bun native | ✅ Compatible |
 | Database Client | `@neondatabase/serverless` | `bun:sql` (Bun.sql) | ⚠️ Different API |
 | Frontend | React | React | ✅ Same |
-| Routing | React Router | Wouter | ⚠️ Different API |
+| Routing | React Router | Bun.server router[^1] | ⚠️ Different API |
 | Server | Express/Next.js | Bun.serve() | ⚠️ Different API |
 | Password Hashing | bcrypt | Need to add | ❌ Missing |
 | Session Storage | PostgreSQL | PostgreSQL | ✅ Same |
+
+[^1]: https://bun.com/docs/runtime/http/server
 
 ### Key Differences
 

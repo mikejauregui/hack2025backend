@@ -63,6 +63,24 @@ Backend Integration:
   - Bearer token authentication
 ```
 
+### Color Palette
+
+```css
+@theme {
+  --color-cerise-red-50: #fcf3f6;
+  --color-cerise-red-100: #f9eaf0;
+  --color-cerise-red-200: #f6d4e0;
+  --color-cerise-red-300: #efb2c6;
+  --color-cerise-red-400: #e482a0;
+  --color-cerise-red-500: #d85c7e;
+  --color-cerise-red-600: #c74462;
+  --color-cerise-red-700: #aa2c45;
+  --color-cerise-red-800: #8d273a;
+  --color-cerise-red-900: #762535;
+  --color-cerise-red-950: #47101a;
+}
+```
+
 ### No Additional Dependencies Needed
 All required packages are already installed!
 

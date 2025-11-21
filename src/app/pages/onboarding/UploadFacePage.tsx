@@ -1,5 +1,5 @@
 import { Camera, UploadCloud } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
@@ -45,6 +45,14 @@ export default function UploadFacePage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fde6ee,#fff)] px-4 py-10">

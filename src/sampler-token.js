@@ -73,7 +73,7 @@ const walletAddressUrl = "https://ilp.interledger-test.dev/d2667778";
       incomingAmount: {
         assetCode: receivingWalletAddress.assetCode,
         assetScale: receivingWalletAddress.assetScale,
-        value: "1000",
+        value: "10000",
       },
     }
   );

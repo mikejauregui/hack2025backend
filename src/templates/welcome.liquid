@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome!</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 40px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #2563eb;
+    }
+    h1 {
+      color: #111827;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #10b981;
+      color: #ffffff !important;
+      padding: 12px 32px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      margin: 20px 0;
+    }
+    .button:hover {
+      background-color: #059669;
+    }
+    .steps {
+      background-color: #f9fafb;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .step {
+      margin: 15px 0;
+      display: flex;
+      align-items: start;
+    }
+    .step-number {
+      background-color: #2563eb;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 14px;
+      color: #6b7280;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">🎉 Face Payment System</div>
+    </div>
+
+    <h1>Welcome Aboard, {{ name }}!</h1>
+
+    <p>Your email has been verified successfully! You're now ready to experience the future of payments with biometric authentication.</p>
+
+    <div style="text-align: center;">
+      <a href="{{ dashboardUrl }}" class="button">Go to Dashboard</a>
+    </div>
+
+    <div class="steps">
+      <h3 style="margin-top: 0;">Next Steps:</h3>
+
+      <div class="step">
+        <div class="step-number">1</div>
+        <div>
+          <strong>Upload Your Face Image</strong>
+          <p style="margin: 5px 0 0 0; color: #6b7280;">Upload one or more photos of your face for biometric authentication. This allows you to make payments with just your face!</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <div>
+          <strong>Create Your First Wallet</strong>
+          <p style="margin: 5px 0 0 0; color: #6b7280;">Set up your payment wallet to start making transactions. You can create multiple wallets for different purposes.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <div>
+          <strong>Start Making Payments</strong>
+          <p style="margin: 5px 0 0 0; color: #6b7280;">Make secure payments using facial recognition at any supported merchant. No cards or cash needed!</p>
+        </div>
+      </div>
+    </div>
+
+    <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+      Need help getting started? Visit our help center or contact support at <a href="mailto:support@dbug.mx" style="color: #2563eb;">support@dbug.mx</a>
+    </p>
+
+    <div class="footer">
+      <p>Thank you for joining Face Payment System!</p>
+      <p>&copy; 2025 Face Payment System. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

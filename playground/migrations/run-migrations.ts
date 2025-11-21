@@ -4,7 +4,7 @@
  * Runs all SQL migration files in order
  */
 
-import { file, Glob, sql } from "bun";
+import { Glob, sql } from "bun";
 import { join } from "path";
 
 const MIGRATIONS_DIR = import.meta.dir;
@@ -12,7 +12,6 @@ const MIGRATIONS_DIR = import.meta.dir;
 interface Migration {
   filename: string;
   order: number;
-  content: string;
 }
 
 async function loadMigrations(): Promise<Migration[]> {
@@ -20,14 +19,11 @@ async function loadMigrations(): Promise<Migration[]> {
   const migrations: Migration[] = [];
 
   for await (const filename of glob.scan(MIGRATIONS_DIR)) {
-    const filePath = join(MIGRATIONS_DIR, filename);
-    const content = await file(filePath).text();
     const order = parseInt(filename.split("_")[0] || "0");
 
     migrations.push({
       filename,
       order,
-      content,
     });
   }
 
@@ -36,10 +32,20 @@ async function loadMigrations(): Promise<Migration[]> {
 
 async function runMigration(migration: Migration): Promise<void> {
   console.log(`\n📦 Running migration: ${migration.filename}`);
+  const filePath = join(MIGRATIONS_DIR, migration.filename);
 
   try {
-    // Execute the entire migration file
-    await sql.unsafe(migration.content);
+    await sql.begin(async (tx) => {
+      // Execute the migration file
+      await tx.file(filePath);
+
+      // Record the migration
+      await tx`
+        INSERT INTO schema_migrations (filename)
+        VALUES (${migration.filename})
+        ON CONFLICT (filename) DO NOTHING
+      `;
+    });
     console.log(`✅ Migration ${migration.filename} completed successfully`);
   } catch (error) {
     console.error(`❌ Migration ${migration.filename} failed:`);
@@ -98,14 +104,6 @@ async function getMigratedFiles(): Promise<string[]> {
   }
 }
 
-async function recordMigration(filename: string): Promise<void> {
-  await sql`
-    INSERT INTO schema_migrations (filename)
-    VALUES (${filename})
-    ON CONFLICT (filename) DO NOTHING
-  `;
-}
-
 async function main() {
   console.log("🚀 Starting database migrations...\n");
 
@@ -137,7 +135,6 @@ async function main() {
     // Run each pending migration
     for (const migration of pending) {
       await runMigration(migration);
-      await recordMigration(migration.filename);
     }
 
     console.log("\n✨ All migrations completed successfully!");

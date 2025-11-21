@@ -1,4 +1,4 @@
-import { Filter, Search } from "lucide-react";
+import { AlertCircle, Filter, RefreshCcw, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -16,7 +16,7 @@ function statusBadge(status: string) {
 }
 
 export default function TransactionsPage() {
-  const { transactions } = useTransactions();
+  const { transactions, loading, error, refetch } = useTransactions();
   const [query, setQuery] = useState("");
   const filtered = useMemo(
     () =>
@@ -51,8 +51,20 @@ export default function TransactionsPage() {
         </header>
 
         <div className="flex flex-col gap-4 rounded-3xl bg-cerise-red-50/80 p-4 text-sm text-cerise-red-600 sm:flex-row sm:items-center sm:justify-between">
-          <div>Showing {filtered.length} results</div>
+          <div>
+            {loading
+              ? "Loading transactions..."
+              : `Showing ${filtered.length} result${filtered.length === 1 ? "" : "s"}`}
+          </div>
           <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              className="rounded-2xl border-cerise-red-200 text-cerise-red-700"
+              onClick={refetch}
+            >
+              <RefreshCcw className="size-4" />
+              Refresh
+            </Button>
             <Button
               variant="ghost"
               className="rounded-2xl border border-cerise-red-100 text-cerise-red-700"
@@ -95,32 +107,67 @@ export default function TransactionsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((txn) => (
-                <tr key={txn.id} className="border-t border-cerise-red-50">
-                  <td className="px-6 py-4 font-semibold text-cerise-red-900">
-                    {txn.merchantName}
+              {loading && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-6 text-center text-sm text-cerise-red-500"
+                  >
+                    Fetching transactions...
                   </td>
-                  <td className="px-6 py-4 text-cerise-red-600">
-                    {new Date(txn.date).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 text-cerise-red-600">
-                    {txn.walletName}
-                  </td>
-                  <td className="px-6 py-4 text-cerise-red-600">
-                    {txn.paymentType}
-                  </td>
-                  <td className="px-6 py-4 text-right font-semibold text-cerise-red-900">
-                    {txn.amount.toFixed(2)} {txn.currency}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadge(txn.status)}`}
-                    >
-                      {txn.status}
+                </tr>
+              )}
+              {error && !loading && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-6 text-center text-sm text-cerise-red-500"
+                  >
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <AlertCircle className="size-4" />
+                      {error}
                     </span>
                   </td>
                 </tr>
-              ))}
+              )}
+              {!loading && !error && filtered.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-6 text-center text-sm text-cerise-red-500"
+                  >
+                    No transactions found.
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                !error &&
+                filtered.map((txn) => (
+                  <tr key={txn.id} className="border-t border-cerise-red-50">
+                    <td className="px-6 py-4 font-semibold text-cerise-red-900">
+                      {txn.merchantName}
+                    </td>
+                    <td className="px-6 py-4 text-cerise-red-600">
+                      {new Date(txn.date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-cerise-red-600">
+                      {txn.walletName}
+                    </td>
+                    <td className="px-6 py-4 text-cerise-red-600">
+                      {txn.paymentType}
+                    </td>
+                    <td className="px-6 py-4 text-right font-semibold text-cerise-red-900">
+                      {txn.amount.toFixed(2)} {txn.currency}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadge(txn.status)}`}
+                      >
+                        {txn.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -151,6 +198,13 @@ export default function TransactionsPage() {
             </p>
           </div>
         </div>
+
+        {error && (
+          <div className="flex items-center gap-2 rounded-3xl border border-cerise-red-100 bg-cerise-red-50/80 p-4 text-sm text-cerise-red-700">
+            <AlertCircle className="size-4" />
+            Unable to load some data. Please refresh once the API is available.
+          </div>
+        )}
       </div>
     </div>
   );

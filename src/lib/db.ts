@@ -200,18 +200,75 @@ export async function getFaceImagesByUserId(userId: string) {
 
 // Existing Transaction Interface
 export interface Transaction {
-
+  id?: string;
+  user_id?: string;
+  wallet_id?: string;
   amount: number;
   currency: string;
-  store: number;
-  snapshot_id: string;
+  store?: number;
+  store_id?: string;
+  merchant_name?: string;
+  snapshot?: string;
+  snapshot_id?: string;
+  snapshot_s3_key?: string;
   transcript?: string | null;
+  payment_type?: string;
+  payment_status?: string;
+  interledger_payment_id?: string | null;
+  grant_id?: string | null;
+  face_image_id?: string | null;
+  face_match_confidence?: number | null;
+  voice_s3_key?: string | null;
+  created_at?: Date;
+  completed_at?: Date | null;
+  metadata?: Record<string, unknown> | null;
+  notes?: string | null;
 }
 
 export async function insertTransaction(request: Transaction) {
-  const [transaction] = await sql`
-    INSERT INTO transactions (amount, currency, store, snapshot, transcript)
-    VALUES (${request.amount}, ${request.currency}, ${request.store}, ${request.snapshot_id}, ${request.transcript})
+  const [transaction] = await sql<Transaction[]>`
+    INSERT INTO transactions (
+      user_id,
+      wallet_id,
+      amount,
+      currency,
+      store,
+      snapshot,
+      transcript,
+      payment_type,
+      payment_status,
+      interledger_payment_id,
+      grant_id,
+      snapshot_s3_key,
+      face_image_id,
+      face_match_confidence,
+      voice_s3_key,
+      created_at,
+      completed_at,
+      notes,
+      metadata
+    )
+    VALUES (
+      ${request.user_id || null},
+      ${request.wallet_id || null},
+      ${request.amount},
+      ${request.currency},
+      ${request.store || null},
+      ${request.snapshot_id || request.snapshot || null},
+      ${request.transcript || null},
+      ${request.payment_type || "outgoing"},
+      ${request.payment_status || "completed"},
+      ${request.interledger_payment_id || null},
+      ${request.grant_id || null},
+      ${request.snapshot_s3_key || null},
+      ${request.face_image_id || null},
+      ${request.face_match_confidence || null},
+      ${request.voice_s3_key || null},
+      ${request.created_at || new Date()},
+      ${request.completed_at || null},
+      ${request.notes || null},
+      ${request.metadata ? JSON.stringify(request.metadata) : null}
+    )
     RETURNING *;
   `;
   return transaction;
@@ -219,7 +276,17 @@ export async function insertTransaction(request: Transaction) {
 
 export async function getTransactions() {
   const transactions = await sql<Transaction[]>`
-    SELECT * FROM transactions ORDER BY timestamp DESC;
+    SELECT * FROM transactions ORDER BY created_at DESC NULLS LAST, timestamp DESC NULLS LAST;
+  `;
+  return transactions;
+}
+
+export async function getTransactionsByUserId(userId: string) {
+  const transactions = await sql<Transaction[]>`
+    SELECT *
+    FROM transactions
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC NULLS LAST, timestamp DESC NULLS LAST;
   `;
   return transactions;
 }
@@ -248,7 +315,7 @@ export interface Client {
 export function insertClient(
   name: string,
   grant_token: string,
-  wallet: string
+  wallet: string,
 ) {
   return sql`
     INSERT INTO clients (name, grant_token, wallet)
@@ -280,7 +347,7 @@ export async function getGrantTokenByClientId(id: string) {
 
 export async function updateGrantTokenByClientId(
   id: string,
-  grant_token: string
+  grant_token: string,
 ) {
   const [client] = await sql<Client[]>`
     UPDATE clients
@@ -311,7 +378,7 @@ export async function insertGrant(
   id: string,
   uri: string,
   value: string,
-  client_id: string
+  client_id: string,
 ) {
   return sql<Grant[]>`
     INSERT INTO grants_manager (id, uri, value, client_id)

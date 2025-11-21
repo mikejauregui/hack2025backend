@@ -6,6 +6,22 @@ A biometric payment platform that uses facial recognition to identify users and 
 
 [One Page Doc](https://docs.google.com/document/d/1S2hedoYSg_eU0Mr8ETCOuv1DbL44KDl4SGwY3fXBGQk/edit?usp=sharing)
 
+## Project Structure
+
+### Documentation
+All Product Requirement Documents (PRDs) and implementation plans are located in the `/docs` folder:
+- `prd-main.md` - Main product requirements document
+- `prd-auth.md` - Authentication requirements
+- `prd-frontend.md` - Frontend specifications
+- `phase1-implementation.md` - Phase 1 implementation details
+- `implementation-roadmap.md` - Overall implementation roadmap
+
+### Playground
+The `/playground` folder contains experimental code, prototypes, and testing environments for development and testing purposes.
+
+### Migrations
+Database migrations are located in `/playground/migrations`.
+
 # Frontend Repo
 
 The frontend code is located in a separate repository: [face-pay-frontend](https://github.com/mikejauregui/hack2025front)

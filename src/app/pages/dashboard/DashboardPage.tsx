@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   ArrowUpRight,
   CreditCard,
   LogOut,
@@ -22,13 +23,27 @@ function formatCurrency(amount: number, currency: string) {
 
 export default function DashboardPage() {
   const { user, signout } = useAuth();
-  const { wallets } = useWallets();
-  const { transactions } = useTransactions();
+  const {
+    wallets,
+    loading: walletsLoading,
+    error: walletsError,
+    refetch: refetchWallets,
+  } = useWallets();
+  const {
+    transactions,
+    loading: transactionsLoading,
+    error: transactionsError,
+    refetch: refetchTransactions,
+  } = useTransactions();
 
   const totalBalance = useMemo(
     () => wallets.reduce((sum, wallet) => sum + wallet.balance, 0),
     [wallets],
   );
+  const primaryCurrency = wallets[0]?.currency ?? "EUR";
+  const showWalletEmpty = !walletsLoading && wallets.length === 0;
+  const showTransactionsEmpty =
+    !transactionsLoading && transactions.length === 0;
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fde6ee,#fff)] px-4 py-10">
@@ -48,6 +63,10 @@ export default function DashboardPage() {
             <Button
               variant="outline"
               className="rounded-2xl border-cerise-red-200 text-cerise-red-700"
+              onClick={() => {
+                refetchWallets();
+                refetchTransactions();
+              }}
             >
               <CreditCard className="size-4" />
               New charge
@@ -69,7 +88,9 @@ export default function DashboardPage() {
               Total balance
             </p>
             <p className="mt-2 text-4xl font-semibold text-cerise-red-900">
-              {formatCurrency(totalBalance, wallets[0]?.currency ?? "EUR")}
+              {walletsLoading
+                ? "--"
+                : formatCurrency(totalBalance, primaryCurrency)}
             </p>
             <div className="mt-6 grid gap-4 text-sm text-cerise-red-600 sm:grid-cols-2">
               <div className="rounded-3xl bg-white/70 p-4">
@@ -77,7 +98,7 @@ export default function DashboardPage() {
                   Active wallets
                 </p>
                 <p className="text-2xl font-semibold text-cerise-red-900">
-                  {wallets.length}
+                  {walletsLoading ? "--" : wallets.length}
                 </p>
               </div>
               <div className="rounded-3xl bg-white/70 p-4">
@@ -85,10 +106,16 @@ export default function DashboardPage() {
                   Transactions
                 </p>
                 <p className="text-2xl font-semibold text-cerise-red-900">
-                  {transactions.length}
+                  {transactionsLoading ? "--" : transactions.length}
                 </p>
               </div>
             </div>
+            {(walletsError || transactionsError) && (
+              <div className="mt-4 flex items-center gap-2 rounded-2xl bg-cerise-red-50/80 p-3 text-sm text-cerise-red-700">
+                <AlertCircle className="size-4" />
+                {walletsError || transactionsError}
+              </div>
+            )}
           </div>
           <div className="rounded-4xl border border-cerise-red-100 bg-white/90 p-6 shadow-[0_12px_30px_rgba(133,30,49,0.08)]">
             <p className="text-sm font-semibold text-cerise-red-600">
@@ -126,6 +153,16 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
+            {walletsLoading && (
+              <div className="rounded-3xl border border-dashed border-cerise-red-100 bg-white/70 p-6 text-sm text-cerise-red-500">
+                Loading wallets...
+              </div>
+            )}
+            {showWalletEmpty && (
+              <div className="rounded-3xl border border-cerise-red-100 bg-white/90 p-6 text-sm text-cerise-red-600">
+                No wallets yet. Create one to start transacting.
+              </div>
+            )}
             {wallets.map((wallet) => (
               <div
                 key={wallet.id}
@@ -185,32 +222,64 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.slice(0, 5).map((txn) => (
-                  <tr
-                    key={txn.id}
-                    className="border-t border-cerise-red-50 text-cerise-red-800"
-                  >
-                    <td className="py-4 font-semibold">{txn.merchantName}</td>
-                    <td>{new Date(txn.date).toLocaleDateString()}</td>
-                    <td>{txn.walletName}</td>
-                    <td className="text-right font-semibold">
-                      {formatCurrency(txn.amount, txn.currency)}
-                    </td>
-                    <td className="text-right">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          txn.status === "completed"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : txn.status === "failed"
-                              ? "bg-cerise-red-100 text-cerise-red-700"
-                              : "bg-amber-50 text-amber-600"
-                        }`}
-                      >
-                        {txn.status}
-                      </span>
+                {transactionsLoading && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="py-6 text-center text-sm text-cerise-red-500"
+                    >
+                      Loading transactions...
                     </td>
                   </tr>
-                ))}
+                )}
+                {transactionsError && !transactionsLoading && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="py-6 text-center text-sm text-cerise-red-500"
+                    >
+                      {transactionsError}
+                    </td>
+                  </tr>
+                )}
+                {showTransactionsEmpty && !transactionsError && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="py-6 text-center text-sm text-cerise-red-500"
+                    >
+                      No transactions yet.
+                    </td>
+                  </tr>
+                )}
+                {!transactionsLoading &&
+                  !transactionsError &&
+                  transactions.slice(0, 5).map((txn) => (
+                    <tr
+                      key={txn.id}
+                      className="border-t border-cerise-red-50 text-cerise-red-800"
+                    >
+                      <td className="py-4 font-semibold">{txn.merchantName}</td>
+                      <td>{new Date(txn.date).toLocaleDateString()}</td>
+                      <td>{txn.walletName}</td>
+                      <td className="text-right font-semibold">
+                        {formatCurrency(txn.amount, txn.currency)}
+                      </td>
+                      <td className="text-right">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            txn.status === "completed"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : txn.status === "failed"
+                                ? "bg-cerise-red-100 text-cerise-red-700"
+                                : "bg-amber-50 text-amber-600"
+                          }`}
+                        >
+                          {txn.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 import { api } from "../lib/api";
 
 export interface TransactionRecord {
@@ -11,104 +12,126 @@ export interface TransactionRecord {
   walletName: string;
   paymentType: string;
   faceMatch?: number | null;
+  walletId?: string | null;
+  snapshotKey?: string | null;
+  voiceKey?: string | null;
+  interledgerPaymentId?: string | null;
 }
 
-const fallbackTransactions: TransactionRecord[] = [
-  {
-    id: "txn-001",
-    merchantName: "Kafeteria",
-    amount: -5.5,
-    currency: "EUR",
-    status: "failed",
-    date: "2025-09-19",
-    walletName: "Personal Wallet",
-    paymentType: "outgoing",
-    faceMatch: 86.5,
-  },
-  {
-    id: "txn-002",
-    merchantName: "Comms",
-    amount: -18.25,
-    currency: "EUR",
-    status: "completed",
-    date: "2025-09-18",
-    walletName: "Business Wallet",
-    paymentType: "outgoing",
-    faceMatch: 92.1,
-  },
-  {
-    id: "txn-003",
-    merchantName: "FreshMart",
-    amount: -12.95,
-    currency: "EUR",
-    status: "completed",
-    date: "2025-09-16",
-    walletName: "Personal Wallet",
-    paymentType: "outgoing",
-    faceMatch: 88.0,
-  },
-];
-
 export function useTransactions() {
-  const [transactions, setTransactions] =
-    useState<TransactionRecord[]>(fallbackTransactions);
-  const [loading, setLoading] = useState(true);
+  const { token, user } = useAuth();
+  const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
+  const [loading, setLoading] = useState<boolean>(!!token);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshIndex, setRefreshIndex] = useState(0);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
+    if (!token) {
+      setTransactions([]);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function fetchTransactions() {
+      setLoading(true);
+      setError(null);
       try {
-        const res = await api.get("/transactions");
-        if (!res.ok) throw new Error("Failed to fetch transactions");
-        const payload = await res.json();
-        const normalized: TransactionRecord[] = (payload || []).map(
-          (txn: any, index: number) => ({
-            id: txn.id ?? `txn-${index}`,
-            merchantName:
-              txn.merchant_name ||
-              txn.store_name ||
-              txn.metadata?.merchant_name ||
-              `Merchant ${index + 1}`,
-            amount:
-              typeof txn.amount === "number"
-                ? txn.amount
-                : Number(txn.amount ?? 0),
-            currency: txn.currency ?? txn.currency_code ?? "EUR",
-            status: (
-              txn.payment_status ??
-              txn.status ??
-              "completed"
-            ).toLowerCase(),
-            date: txn.created_at ?? txn.timestamp ?? new Date().toISOString(),
-            walletName:
-              txn.wallet_name ?? txn.wallet?.name ?? "Personal Wallet",
-            paymentType: txn.payment_type ?? "outgoing",
-            faceMatch:
-              typeof txn.face_match_confidence === "number"
-                ? txn.face_match_confidence
-                : txn.metadata?.face_match,
-          }),
-        );
-        if (normalized.length && mounted) {
-          setTransactions(normalized);
+        const res = await api.get("/transactions", {
+          signal: controller.signal,
+        });
+        const payload = await res.json().catch(() => null);
+        if (!res.ok) {
+          throw new Error(payload?.error || "Failed to load transactions");
         }
-      } catch (error) {
-        console.error("Transaction fetch error", error);
+
+        if (cancelled) return;
+
+        const source = Array.isArray(payload?.transactions)
+          ? payload.transactions
+          : Array.isArray(payload)
+            ? payload
+            : [];
+
+        const normalized: TransactionRecord[] = source
+          .filter((txn: any) => (user?.id ? txn.user_id === user.id : true))
+          .map((txn: any, index: number) => {
+            const metadata =
+              typeof txn.metadata === "string"
+                ? (() => {
+                    try {
+                      return JSON.parse(txn.metadata);
+                    } catch {
+                      return null;
+                    }
+                  })()
+                : txn.metadata;
+
+            return {
+              id: txn.id ?? `txn-${index}`,
+              merchantName:
+                txn.merchant_name ||
+                txn.store_name ||
+                metadata?.merchant_name ||
+                `Merchant ${index + 1}`,
+              amount:
+                typeof txn.amount === "number"
+                  ? txn.amount
+                  : Number(txn.amount ?? 0),
+              currency: txn.currency ?? txn.currency_code ?? "EUR",
+              status: String(
+                txn.payment_status ?? txn.status ?? "completed",
+              ).toLowerCase(),
+              date:
+                txn.created_at ||
+                txn.completed_at ||
+                txn.timestamp ||
+                new Date().toISOString(),
+              walletName:
+                txn.wallet?.name ||
+                txn.wallet_name ||
+                metadata?.wallet_name ||
+                "Wallet",
+              walletId: txn.wallet_id || txn.wallet?.id || null,
+              paymentType: txn.payment_type ?? "outgoing",
+              faceMatch:
+                txn.face_match_confidence != null
+                  ? Number(txn.face_match_confidence)
+                  : (metadata?.face_match ?? null),
+              snapshotKey: txn.snapshot_s3_key || txn.snapshot || null,
+              voiceKey: txn.voice_s3_key || null,
+              interledgerPaymentId: txn.interledger_payment_id || null,
+            };
+          });
+
+        setTransactions(normalized);
+      } catch (err) {
+        console.error("Transaction fetch error", err);
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Failed to load transactions",
+          );
+        }
       } finally {
-        if (mounted) {
+        if (!cancelled) {
           setLoading(false);
         }
       }
-    })();
+    }
+
+    fetchTransactions();
 
     return () => {
-      mounted = false;
+      cancelled = true;
+      controller.abort();
     };
-  }, []);
+  }, [token, user?.id, refreshIndex]);
 
   const totals = useMemo(() => {
     const outgoing = transactions
-      .filter((t) => t.amount < 0)
+      .filter((t) => typeof t.amount === "number" && t.amount < 0)
       .reduce((sum, t) => sum + t.amount, 0);
     return {
       outgoing,
@@ -116,5 +139,7 @@ export function useTransactions() {
     };
   }, [transactions]);
 
-  return { transactions, loading, totals };
+  const refetch = () => setRefreshIndex((index) => index + 1);
+
+  return { transactions, loading, error, totals, refetch };
 }

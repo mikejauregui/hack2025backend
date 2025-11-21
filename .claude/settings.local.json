@@ -8,7 +8,9 @@
       "Bash(bun:*)",
       "Bash(uv:*)",
       "Bash(npm:*)",
-      "Bash(bun add:*)"
+      "Bash(bun add:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 import { api } from "../lib/api";
 
 export interface WalletRecord {
@@ -12,75 +13,77 @@ export interface WalletRecord {
   updatedAt?: string;
 }
 
-const fallbackWallets: WalletRecord[] = [
-  {
-    id: "wallet-personal",
-    name: "Personal Wallet",
-    walletUrl: "https://wallets.lookandpay.tech/personal",
-    balance: 350.75,
-    currency: "EUR",
-    isPrimary: true,
-    status: "Active",
-    updatedAt: "2025-09-18",
-  },
-  {
-    id: "wallet-business",
-    name: "Business Wallet",
-    walletUrl: "https://wallets.lookandpay.tech/business",
-    balance: 93.25,
-    currency: "EUR",
-    isPrimary: false,
-    status: "Active",
-    updatedAt: "2025-09-17",
-  },
-];
-
 export function useWallets() {
-  const [wallets, setWallets] = useState<WalletRecord[]>(fallbackWallets);
-  const [loading, setLoading] = useState(true);
+  const { token } = useAuth();
+  const [wallets, setWallets] = useState<WalletRecord[]>([]);
+  const [loading, setLoading] = useState<boolean>(!!token);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshIndex, setRefreshIndex] = useState(0);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
+    if (!token) {
+      setWallets([]);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function fetchWallets() {
+      setLoading(true);
+      setError(null);
       try {
-        const res = await api.get("/wallets");
-        if (!res.ok) throw new Error("Failed to fetch wallets");
-        const payload = await res.json();
-        const normalized: WalletRecord[] = (payload?.wallets || []).map(
-          (wallet: any, index: number) => ({
-            id:
-              wallet.id ??
-              (typeof crypto !== "undefined" && "randomUUID" in crypto
-                ? crypto.randomUUID()
-                : `wallet-${index}`),
-            name: wallet.name ?? "Wallet",
-            walletUrl: wallet.wallet_url ?? wallet.walletUrl ?? "",
-            balance:
-              typeof wallet.current_balance === "number"
-                ? wallet.current_balance
-                : Number(wallet.balance ?? 0),
-            currency: wallet.currency_code ?? wallet.currency ?? "EUR",
-            isPrimary: Boolean(wallet.is_primary ?? wallet.isPrimary),
-            status: wallet.status ?? "Active",
-            updatedAt: wallet.updated_at ?? wallet.updatedAt,
-          }),
-        );
-        if (normalized.length && mounted) {
+        const res = await api.get("/wallets", { signal: controller.signal });
+        const payload = await res.json().catch(() => null);
+        if (!res.ok) {
+          throw new Error(payload?.error || "Failed to load wallets");
+        }
+        if (!cancelled) {
+          const normalized: WalletRecord[] = Array.isArray(payload?.wallets)
+            ? payload.wallets.map((wallet: any, index: number) => ({
+                id:
+                  wallet.id ??
+                  (typeof crypto !== "undefined" && "randomUUID" in crypto
+                    ? crypto.randomUUID()
+                    : `wallet-${index}`),
+                name: wallet.name ?? "Wallet",
+                walletUrl: wallet.wallet_url ?? wallet.walletUrl ?? "",
+                balance:
+                  typeof wallet.current_balance === "number"
+                    ? wallet.current_balance
+                    : Number(wallet.balance ?? 0),
+                currency: wallet.currency_code ?? wallet.currency ?? "EUR",
+                isPrimary: Boolean(wallet.is_primary ?? wallet.isPrimary),
+                status: wallet.status ?? "Active",
+                updatedAt: wallet.updated_at ?? wallet.updatedAt ?? undefined,
+              }))
+            : [];
           setWallets(normalized);
         }
-      } catch (error) {
-        console.error("Wallet fetch error", error);
+      } catch (err) {
+        console.error("Wallet fetch error", err);
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Failed to load wallets",
+          );
+        }
       } finally {
-        if (mounted) {
+        if (!cancelled) {
           setLoading(false);
         }
       }
-    })();
+    }
+
+    fetchWallets();
 
     return () => {
-      mounted = false;
+      cancelled = true;
+      controller.abort();
     };
-  }, []);
+  }, [token, refreshIndex]);
 
-  return { wallets, loading };
+  const refetch = () => setRefreshIndex((index) => index + 1);
+
+  return { wallets, loading, error, refetch };
 }

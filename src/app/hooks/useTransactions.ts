@@ -40,7 +40,11 @@ export function useTransactions() {
       setError(null);
       try {
         const res = await api.get("/transactions", {
-          signal: controller.signal,
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : undefined,
         });
         const payload = await res.json().catch(() => null);
         if (!res.ok) {
@@ -108,6 +112,9 @@ export function useTransactions() {
 
         setTransactions(normalized);
       } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
         console.error("Transaction fetch error", err);
         if (!cancelled) {
           setError(
@@ -125,7 +132,6 @@ export function useTransactions() {
 
     return () => {
       cancelled = true;
-      controller.abort();
     };
   }, [token, user?.id, refreshIndex]);
 

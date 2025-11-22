@@ -34,7 +34,7 @@ export function useWallets() {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.get("/wallets", { signal: controller.signal });
+        const res = await api.get("/wallets");
         const payload = await res.json().catch(() => null);
         if (!res.ok) {
           throw new Error(payload?.error || "Failed to load wallets");
@@ -49,10 +49,14 @@ export function useWallets() {
                     : `wallet-${index}`),
                 name: wallet.name ?? "Wallet",
                 walletUrl: wallet.wallet_url ?? wallet.walletUrl ?? "",
-                balance:
-                  typeof wallet.current_balance === "number"
-                    ? wallet.current_balance
-                    : Number(wallet.balance ?? 0),
+                balance: (() => {
+                  const value =
+                    wallet.current_balance ??
+                    wallet.balance ??
+                    wallet.initial_amount ??
+                    0;
+                  return typeof value === "number" ? value : Number(value) || 0;
+                })(),
                 currency: wallet.currency_code ?? wallet.currency ?? "EUR",
                 isPrimary: Boolean(wallet.is_primary ?? wallet.isPrimary),
                 status: wallet.status ?? "Active",
@@ -62,6 +66,9 @@ export function useWallets() {
           setWallets(normalized);
         }
       } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
         console.error("Wallet fetch error", err);
         if (!cancelled) {
           setError(
@@ -79,7 +86,6 @@ export function useWallets() {
 
     return () => {
       cancelled = true;
-      controller.abort();
     };
   }, [token, refreshIndex]);
 

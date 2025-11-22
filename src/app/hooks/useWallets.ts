@@ -34,7 +34,7 @@ export function useWallets() {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.get("/wallets");
+        const res = await api.get("/wallets", { signal: controller.signal });
         const payload = await res.json().catch(() => null);
         if (!res.ok) {
           throw new Error(payload?.error || "Failed to load wallets");
@@ -86,6 +86,7 @@ export function useWallets() {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [token, refreshIndex]);
 

@@ -122,6 +122,11 @@ export default function DashboardPage() {
               Quick actions
             </p>
             <div className="mt-4 space-y-3">
+              <Link href="/profile" className="block">
+                <Button className="w-full rounded-2xl" variant="outline">
+                  Manage profile
+                </Button>
+              </Link>
               <Button className="w-full rounded-2xl" variant="outline">
                 <Wallet2 className="size-4" />
                 Issue new wallet

@@ -1,8 +1,19 @@
-import { AlertCircle, Plus, RefreshCcw, ShieldCheck } from "lucide-react";
+import { AlertCircle, Plus, RefreshCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/ui/button";
-import { useTransactions } from "../../hooks/useTransactions";
+import {
+  TransactionRecord,
+  useTransactions,
+} from "../../hooks/useTransactions";
 import { useWallets } from "../../hooks/useWallets";
+
+function formatCurrency(amount: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+  }).format(amount);
+}
 
 export default function WalletsPage() {
   const {
@@ -32,24 +43,14 @@ export default function WalletsPage() {
 
   const activeWallet =
     wallets.find((wallet) => wallet.id === selectedWalletId) ?? null;
-  const spotlightTransaction = useMemo(() => {
-    if (!transactions.length) return undefined;
-    if (!activeWallet) return transactions[0];
-    return (
-      transactions.find(
-        (txn) =>
-          txn.walletId === activeWallet.id ||
-          txn.walletName === activeWallet.name,
-      ) ?? transactions[0]
+  const walletTransactions: TransactionRecord[] = useMemo(() => {
+    if (!activeWallet) return [];
+    return transactions.filter(
+      (txn) =>
+        txn.walletId === activeWallet.id ||
+        txn.walletName === activeWallet.name,
     );
   }, [activeWallet, transactions]);
-  const amountDisplay = spotlightTransaction
-    ? `${spotlightTransaction.amount.toFixed(2)} ${spotlightTransaction.currency}`
-    : "--";
-  const faceMatchDisplay = spotlightTransaction?.faceMatch ?? 88;
-  const snapshotSuffix = spotlightTransaction?.id?.slice(-4) ?? "0000";
-  const snapshotLabel =
-    spotlightTransaction?.snapshotKey ?? `snapshot-${snapshotSuffix}`;
   const showEmptyWalletState = !walletsLoading && wallets.length === 0;
 
   if (showEmptyWalletState) {
@@ -160,164 +161,137 @@ export default function WalletsPage() {
 
         <div className="space-y-6">
           <section className="space-y-6 rounded-4xl border border-cerise-red-100 bg-white/95 p-8 shadow-[0_20px_60px_rgba(133,30,49,0.08)]">
-            <div className="flex flex-col gap-2">
-              <p className="text-sm text-cerise-red-500">Transaction details</p>
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-cerise-red-500">Wallet overview</p>
               <h2 className="text-3xl font-semibold text-cerise-red-900">
-                {spotlightTransaction?.merchantName ?? "No transactions"}
+                {activeWallet.name}
               </h2>
               <p className="text-sm text-cerise-red-600">
-                Completed on{" "}
-                {spotlightTransaction?.date
-                  ? new Date(spotlightTransaction.date).toLocaleDateString()
-                  : "--"}
+                {activeWallet.walletUrl || "Interledger wallet"}
               </p>
-              <div className="flex flex-wrap gap-3 text-sm">
-                <span className="rounded-full bg-cerise-red-50 px-3 py-1 font-semibold text-cerise-red-700">
-                  {spotlightTransaction?.status ?? "pending"}
-                </span>
+              <div className="flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-wide">
+                {activeWallet.isPrimary && (
+                  <span className="rounded-full bg-cerise-red-50 px-3 py-1 text-cerise-red-700">
+                    Primary wallet
+                  </span>
+                )}
                 <span className="rounded-full bg-cerise-red-100 px-3 py-1 text-cerise-red-700">
-                  {spotlightTransaction?.walletName ?? activeWallet.name}
+                  {activeWallet.status}
                 </span>
               </div>
             </div>
-
-            <div className="rounded-3xl bg-cerise-red-50/70 p-6 text-cerise-red-900">
-              <p className="text-sm text-cerise-red-600">Amount</p>
-              <p className="text-4xl font-semibold">{amountDisplay}</p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-3xl border border-cerise-red-100 p-4 text-sm text-cerise-red-600">
-                <p className="font-semibold text-cerise-red-900">Details</p>
-                <ul className="mt-3 space-y-2">
-                  <li>
-                    Wallet:{" "}
-                    <span className="font-semibold text-cerise-red-900">
-                      {spotlightTransaction?.walletName ?? activeWallet.name}
-                    </span>
-                  </li>
-                  <li>
-                    Date:{" "}
-                    <span className="font-semibold text-cerise-red-900">
-                      {spotlightTransaction?.date
-                        ? new Date(spotlightTransaction.date).toLocaleString()
-                        : "--"}
-                    </span>
-                  </li>
-                  <li>Face match: {faceMatchDisplay}%</li>
-                </ul>
-              </div>
-              <div className="rounded-3xl border border-cerise-red-100 p-4 text-sm text-cerise-red-600">
-                <p className="font-semibold text-cerise-red-900">
-                  Biometric snapshot
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-3xl border border-cerise-red-100 bg-white/80 p-5">
+                <p className="text-sm text-cerise-red-500">Balance</p>
+                <p className="mt-2 text-3xl font-semibold text-cerise-red-900">
+                  {formatCurrency(activeWallet.balance, activeWallet.currency)}
                 </p>
-                <div className="mt-3 flex items-center gap-4">
-                  <img
-                    src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80"
-                    alt="Face snapshot"
-                    className="h-24 w-24 rounded-3xl object-cover"
-                  />
-                  <div>
-                    <p className="text-lg font-semibold text-cerise-red-900">
-                      Match {faceMatchDisplay}%
-                    </p>
-                    <p className="text-sm text-cerise-red-600">
-                      {snapshotLabel}
-                    </p>
-                  </div>
-                </div>
               </div>
-            </div>
-
-            <div className="flex flex-col gap-4 rounded-3xl bg-cerise-red-50/80 p-6 text-sm text-cerise-red-700 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-2xl bg-white">
-                  <ShieldCheck className="size-6 text-cerise-red-500" />
-                </div>
-                <div>
-                  <p className="font-semibold text-cerise-red-900">
-                    Compliance ready
-                  </p>
-                  <p>Stored with AML evidence + liveness record.</p>
-                </div>
+              <div className="rounded-3xl border border-cerise-red-100 bg-white/80 p-5">
+                <p className="text-sm text-cerise-red-500">Currency</p>
+                <p className="mt-2 text-2xl font-semibold text-cerise-red-900">
+                  {activeWallet.currency}
+                </p>
               </div>
-              <Button className="rounded-2xl">Download receipt</Button>
-            </div>
-            <div className="flex flex-wrap gap-3 text-sm">
-              <span className="inline-flex items-center gap-2 rounded-full bg-cerise-red-50 px-4 py-2 text-cerise-red-700">
-                <ShieldCheck className="size-4" /> Biometric verified
-              </span>
-              {transactionsLoading && (
-                <span className="inline-flex items-center gap-2 rounded-full bg-cerise-red-50 px-4 py-2 text-cerise-red-500">
-                  <AlertCircle className="size-4" /> Loading transactions...
-                </span>
-              )}
-              <span className="inline-flex items-center gap-2 rounded-full bg-cerise-red-50 px-4 py-2 text-cerise-red-700">
-                0 disputed payments
-              </span>
+              <div className="rounded-3xl border border-cerise-red-100 bg-white/80 p-5">
+                <p className="text-sm text-cerise-red-500">Wallet address</p>
+                <p className="mt-2 text-sm text-cerise-red-900">
+                  {activeWallet.walletUrl || "Not provided"}
+                </p>
+              </div>
+              <div className="rounded-3xl border border-cerise-red-100 bg-white/80 p-5">
+                <p className="text-sm text-cerise-red-500">Last updated</p>
+                <p className="mt-2 text-lg font-semibold text-cerise-red-900">
+                  {activeWallet.updatedAt
+                    ? new Date(activeWallet.updatedAt).toLocaleString()
+                    : "Recently"}
+                </p>
+              </div>
             </div>
           </section>
 
           <section className="rounded-4xl border border-cerise-red-100 bg-white/95 p-8 shadow-[0_20px_60px_rgba(133,30,49,0.08)]">
-            <div className="flex flex-col gap-2">
-              <p className="text-sm text-cerise-red-500">Receipts timeline</p>
-              <h2 className="text-2xl font-semibold text-cerise-red-900">
-                All transactions
-              </h2>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-cerise-red-500">Wallet activity</p>
+                <h2 className="text-2xl font-semibold text-cerise-red-900">
+                  Recent transactions
+                </h2>
+              </div>
+              <Button
+                variant="outline"
+                className="rounded-2xl border-cerise-red-200 text-cerise-red-700"
+                onClick={() => refetchTransactions()}
+              >
+                Refresh activity
+              </Button>
             </div>
-            <div className="mt-6 space-y-4">
-              {transactionsLoading && (
-                <div className="rounded-3xl border border-dashed border-cerise-red-100 bg-white/70 p-6 text-sm text-cerise-red-500">
-                  Loading transactions...
-                </div>
-              )}
-              {!transactionsLoading && transactions.length === 0 && (
-                <div className="rounded-3xl border border-dashed border-cerise-red-100 bg-white/70 p-6 text-sm text-cerise-red-500">
-                  No transactions yet.
-                </div>
-              )}
-              {transactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="rounded-3xl border border-cerise-red-100 bg-white/80 p-6"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-cerise-red-500">
-                        {transaction.date
-                          ? new Date(transaction.date).toLocaleString()
-                          : "--"}
-                      </p>
-                      <p className="text-xl font-semibold text-cerise-red-900">
-                        {transaction.merchantName}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-cerise-red-500">Amount</p>
-                      <p className="text-2xl font-semibold text-cerise-red-900">
-                        {transaction.amount.toFixed(2)} {transaction.currency}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-3 text-sm text-cerise-red-600">
-                    <span>
-                      Wallet:{" "}
-                      <strong>{transaction.walletName ?? "Unknown"}</strong>
-                    </span>
-                    {transaction.biometricReceiptId && (
-                      <span>
-                        Receipt:{" "}
-                        <strong>{transaction.biometricReceiptId}</strong>
-                      </span>
-                    )}
-                    {transaction.faceMatch && (
-                      <span>
-                        Face match: <strong>{transaction.faceMatch}%</strong>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+            {transactionsError && (
+              <div className="mt-4 flex items-center gap-2 rounded-3xl bg-cerise-red-50/80 p-3 text-sm text-cerise-red-700">
+                <AlertCircle className="size-4" />
+                {transactionsError}
+              </div>
+            )}
+            <div className="mt-6 overflow-x-auto">
+              <table className="w-full min-w-[500px] text-left text-sm">
+                <thead>
+                  <tr className="text-cerise-red-500">
+                    <th className="py-3">Merchant</th>
+                    <th className="py-3">Date</th>
+                    <th className="py-3 text-right">Amount</th>
+                    <th className="py-3 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactionsLoading && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="py-6 text-center text-sm text-cerise-red-500"
+                      >
+                        Loading transactions...
+                      </td>
+                    </tr>
+                  )}
+                  {!transactionsLoading && walletTransactions.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="py-6 text-center text-sm text-cerise-red-500"
+                      >
+                        No wallet activity yet.
+                      </td>
+                    </tr>
+                  )}
+                  {walletTransactions.map((txn) => (
+                    <tr
+                      key={txn.id}
+                      className="border-t border-cerise-red-50 text-cerise-red-800"
+                    >
+                      <td className="py-4 font-semibold">{txn.merchantName}</td>
+                      <td>
+                        {txn.date ? new Date(txn.date).toLocaleString() : "--"}
+                      </td>
+                      <td className="text-right font-semibold">
+                        {formatCurrency(txn.amount, txn.currency)}
+                      </td>
+                      <td className="text-right">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            txn.status === "completed"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : txn.status === "failed"
+                                ? "bg-cerise-red-100 text-cerise-red-700"
+                                : "bg-amber-50 text-amber-600"
+                          }`}
+                        >
+                          {txn.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
         </div>

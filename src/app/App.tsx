@@ -10,6 +10,7 @@ import SignInPage from "./pages/auth/SignInPage";
 import SignUpPage from "./pages/auth/SignUpPage";
 import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
+import ProfilePage from "./pages/dashboard/ProfilePage";
 import SettingsPage from "./pages/dashboard/SettingsPage";
 import TransactionsPage from "./pages/dashboard/TransactionsPage";
 import WalletsPage from "./pages/dashboard/WalletsPage";
@@ -58,6 +59,11 @@ export default function App() {
         <Route path="/wallets">
           <ProtectedRoute requireEmailVerified>
             <WalletsPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/profile">
+          <ProtectedRoute requireEmailVerified>
+            <ProfilePage />
           </ProtectedRoute>
         </Route>
         <Route path="/settings">

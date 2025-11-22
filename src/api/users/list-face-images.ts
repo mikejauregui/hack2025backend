@@ -1,8 +1,8 @@
 import { s3 } from "bun";
 import { Buffer } from "node:buffer";
-import { validateSession } from "src/lib/auth";
-import { getTransactionsByUserId } from "src/lib/db";
-import { ClientResponse } from "src/lib/Response";
+import { ClientResponse } from "../../lib/Response";
+import { validateSession } from "../../lib/auth";
+import { getFaceImagesByUserId } from "../../lib/db";
 
 function guessMimeType(key?: string | null) {
   if (!key) return "image/png";
@@ -20,7 +20,7 @@ function guessMimeType(key?: string | null) {
   }
 }
 
-async function readSnapshotDataUrl(key?: string | null) {
+async function readImageDataUrl(key?: string | null) {
   if (!key) return null;
   try {
     const file = s3.file(key);
@@ -28,12 +28,12 @@ async function readSnapshotDataUrl(key?: string | null) {
     const base64 = Buffer.from(arrayBuffer).toString("base64");
     return `data:${guessMimeType(key)};base64,${base64}`;
   } catch (error) {
-    console.error(`Failed to read snapshot ${key}`, error);
+    console.error(`Failed to read face image ${key}`, error);
     return null;
   }
 }
 
-export async function listTransactions(req: Request) {
+export async function listFaceImages(req: Request) {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -46,24 +46,22 @@ export async function listTransactions(req: Request) {
       return ClientResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
-    const transactions = await getTransactionsByUserId(user.id);
-    const enriched = await Promise.all(
-      transactions.map(async (transaction) => ({
-        ...transaction,
-        amount: Number(transaction.amount) / 100,
-        snapshot_image:
-          (transaction as any).snapshot_image ??
-          (await readSnapshotDataUrl(
-            transaction.snapshot_s3_key || transaction.snapshot || null,
-          )),
+    const faces = await getFaceImagesByUserId(user.id);
+    const payload = await Promise.all(
+      faces.map(async (face) => ({
+        id: face.id,
+        is_primary: face.is_primary,
+        match_count: face.match_count,
+        uploaded_at: (face as any).uploaded_at ?? face.created_at ?? null,
+        last_used_at: face.last_used_at ?? null,
+        s3_key: face.s3_key,
+        image_data: await readImageDataUrl(face.s3_key),
       })),
     );
 
-    return ClientResponse.json({
-      transactions: enriched,
-    });
+    return ClientResponse.json({ faceImages: payload });
   } catch (error) {
-    console.error("List transactions error", error);
+    console.error("List face images error", error);
     return ClientResponse.json(
       { error: "Internal server error" },
       { status: 500 },

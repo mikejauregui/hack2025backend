@@ -1,24 +1,25 @@
 import { serve } from "bun";
 import index from "./app/index.html";
 
-import { upload } from "./api/upload";
-import { listTransactions } from "./api/transactions";
-import { grantEndpoint, confirm } from "./api/grant";
 import { listClients } from "./api/getClients";
+import { confirm, grantEndpoint } from "./api/grant";
+import { listTransactions } from "./api/transactions";
+import { upload } from "./api/upload";
 
 // Auth Endpoints
-import { signup } from "./api/auth/signup";
+import { forgotPassword } from "./api/auth/forgot-password";
+import { me } from "./api/auth/me";
+import { resendVerification } from "./api/auth/resend-verification";
+import { resetPassword } from "./api/auth/reset-password";
 import { signin } from "./api/auth/signin";
 import { signout } from "./api/auth/signout";
-import { me } from "./api/auth/me";
+import { signup } from "./api/auth/signup";
 import { verifyEmail } from "./api/auth/verify-email";
-import { resendVerification } from "./api/auth/resend-verification";
-import { forgotPassword } from "./api/auth/forgot-password";
-import { resetPassword } from "./api/auth/reset-password";
 
 // User & Wallet Endpoints
+import { listFaceImages } from "./api/users/list-face-images";
 import { uploadFace } from "./api/users/upload-face";
-import { listWallets, createWalletEndpoint } from "./api/wallets";
+import { createWalletEndpoint, listWallets } from "./api/wallets";
 
 const server = serve({
   routes: {
@@ -62,6 +63,9 @@ const server = serve({
     // User & Wallet Routes
     "/api/users/upload-face": {
       POST: uploadFace,
+    },
+    "/api/users/face-images": {
+      GET: listFaceImages,
     },
     "/api/wallets": {
       GET: listWallets,

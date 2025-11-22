@@ -16,6 +16,7 @@ export interface TransactionRecord {
   snapshotKey?: string | null;
   voiceKey?: string | null;
   interledgerPaymentId?: string | null;
+  snapshotImage?: string | null;
 }
 
 export function useTransactions() {
@@ -40,6 +41,7 @@ export function useTransactions() {
       setError(null);
       try {
         const res = await api.get("/transactions", {
+          signal: controller.signal,
           headers: token
             ? {
                 Authorization: `Bearer ${token}`,
@@ -105,6 +107,13 @@ export function useTransactions() {
                   ? Number(txn.face_match_confidence)
                   : (metadata?.face_match ?? null),
               snapshotKey: txn.snapshot_s3_key || txn.snapshot || null,
+              snapshotImage:
+                txn.snapshot_image ||
+                txn.snapshotImage ||
+                (typeof txn.snapshot === "string" &&
+                txn.snapshot.startsWith("data:")
+                  ? txn.snapshot
+                  : null),
               voiceKey: txn.voice_s3_key || null,
               interledgerPaymentId: txn.interledger_payment_id || null,
             };
@@ -132,6 +141,7 @@ export function useTransactions() {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [token, user?.id, refreshIndex]);
 

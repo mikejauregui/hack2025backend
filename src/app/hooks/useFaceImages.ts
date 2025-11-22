@@ -27,15 +27,12 @@ export function useFaceImages() {
     }
 
     let cancelled = false;
-    const controller = new AbortController();
 
     async function fetchFaces() {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.get("/users/face-images", {
-          signal: controller.signal,
-        });
+        const res = await api.get("/users/face-images");
         const payload = await res.json().catch(() => null);
         if (!res.ok) {
           throw new Error(payload?.error || "Failed to load face images");
@@ -77,7 +74,6 @@ export function useFaceImages() {
 
     return () => {
       cancelled = true;
-      controller.abort();
     };
   }, [token, refreshIndex]);
 

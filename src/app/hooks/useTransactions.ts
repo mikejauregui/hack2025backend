@@ -34,14 +34,12 @@ export function useTransactions() {
     }
 
     let cancelled = false;
-    const controller = new AbortController();
 
     async function fetchTransactions() {
       setLoading(true);
       setError(null);
       try {
         const res = await api.get("/transactions", {
-          signal: controller.signal,
           headers: token
             ? {
                 Authorization: `Bearer ${token}`,
@@ -141,7 +139,6 @@ export function useTransactions() {
 
     return () => {
       cancelled = true;
-      controller.abort();
     };
   }, [token, user?.id, refreshIndex]);
 

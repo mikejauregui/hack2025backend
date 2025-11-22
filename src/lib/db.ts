@@ -39,7 +39,8 @@ export interface FaceImage {
   rekognition_image_id?: string;
   is_primary: boolean;
   match_count: number;
-  created_at: Date;
+  created_at?: Date;
+  uploaded_at?: Date;
   last_used_at?: Date;
   status: string;
 }
@@ -194,7 +195,21 @@ export async function createFaceImage(face: Partial<FaceImage>) {
 
 export async function getFaceImagesByUserId(userId: string) {
   return await sql<FaceImage[]>`
-    SELECT * FROM face_images WHERE user_id = ${userId} AND status = 'active' ORDER BY is_primary DESC, created_at DESC;
+    SELECT
+      id,
+      user_id,
+      s3_key,
+      rekognition_image_id,
+      is_primary,
+      match_count,
+      uploaded_at,
+      uploaded_at AS created_at,
+      last_used_at,
+      status
+    FROM face_images
+    WHERE user_id = ${userId}
+      AND status = 'active'
+    ORDER BY is_primary DESC, uploaded_at DESC NULLS LAST;
   `;
 }
 

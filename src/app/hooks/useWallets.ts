@@ -28,13 +28,12 @@ export function useWallets() {
     }
 
     let cancelled = false;
-    const controller = new AbortController();
 
     async function fetchWallets() {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.get("/wallets", { signal: controller.signal });
+        const res = await api.get("/wallets");
         const payload = await res.json().catch(() => null);
         if (!res.ok) {
           throw new Error(payload?.error || "Failed to load wallets");
@@ -86,7 +85,6 @@ export function useWallets() {
 
     return () => {
       cancelled = true;
-      controller.abort();
     };
   }, [token, refreshIndex]);
 
